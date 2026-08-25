@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# One paragraph is one line. The rule existed as prose and was broken anyway, twice in one day, the
+# second time in this repository's first commit. This is the operation that makes it hold.
+set -uo pipefail
+root=$(git rev-parse --show-toplevel)
+staged=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.md$' || true)
+[ -z "$staged" ] && exit 0
+cd "$root" && python3 wrap-check.py $staged || exit 1
