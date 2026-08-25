@@ -1,11 +1,8 @@
 # Honest Code: Coding Principles
 
-Every principle names a category of defect and removes it. A practice that does not eliminate a
-named category of bug is a style preference, and does not belong here.
+Every principle names a category of defect and removes it. A practice that does not eliminate a named category of bug is a style preference, and does not belong here.
 
-This is the single source. Projects depend on this repository rather than copying the text, because
-a copied principle drifts silently: twelve copies of this document once held twenty-two principles
-between them, and no copy held them all.
+This is the single source. Projects depend on this repository rather than copying the text, because a copied principle drifts silently: twelve copies of this document once held twenty-two principles between them, and no copy held them all.
 
 ## Dict-Lookup Polymorphism
 Most imperative conditional structures (if/elif/else chains) that dispatch on type or category can be replaced by a dict mapping keys to functions: `HANDLERS = {"email": send_email, "sms": send_sms}` then `HANDLERS[channel](data)`. The dict is a declarative dispatch table. Adding a new case means adding a row, not modifying control flow.
