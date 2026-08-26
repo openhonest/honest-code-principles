@@ -7,26 +7,26 @@ This is the single source.
 ## Lookup Polymorphism
 Imperative conditional structures (if/elif/else chains) can easily create order dependent logic that is fragile and difficult to reason about.
 
-Almost any imperative logic can be replaced by a dict/array/map mapping keys to functions: `HANDLERS = {"email": send_email, "sms": send_sms}` then `HANDLERS[channel](data)`. The dict is a declarative dispatch table. Adding a new case means adding a row, not modifying potentially fragile control flow. The table is read by a polymorphic pure function whose operations vary depending upon the values looked up by the key.
+Almost any dispatch can be replaced by a dict/array/map mapping keys to functions: `HANDLERS = {"email": send_email, "sms": send_sms}` then `HANDLERS[channel](data)`. The dict is a declarative dispatch table. Adding a new case means adding a row, not modifying potentially fragile control flow. The table is read by a polymorphic pure function whose operations vary depending upon the values looked up by the key.
 
 ## Pure Functions Over Methods
-Public methods in classes are an open door to promiscuous state mutation that often creates mathematically an infinite number of  possible permutations, which makes it impossible to exhaustively test program behavior.
+Public methods in classes are an open door to promiscuous state mutation that creates a mathematically infinite number of possible call sequences, since calls repeat without bound, which makes it impossible to exhaustively test program behavior.
 
 A method like `user.validate()` that mutates internal state becomes `validate_user(user: dict) -> dict`. Input in, output out. The function has no access to `self` because there is no `self`. No side effects, no surprises.
 
 A `class User` with fields, methods, getters, setters, and lifecycle hooks becomes `User = TypedDict("User", {"email": str, "name": str})`. The data is just data — no behavior attached. If you can't `json.dumps()` it, it's too clever by half.
 
-Java, C# and C++ do not allow standalone functions. Honest Code is still writable in them by wrapping the function in a class exposing a single public method, which is the language's syntax for a function and not a return to objects.
+Java and C# do not allow standalone functions. Honest Code is still writable in them by wrapping the function in a class exposing a single public method, which is the language's syntax for a function and not a return to objects.
 
 ## I/O at the Boundary
 Sprinkling input/output (I/O) operations—such as database queries, network requests, or file reads/writes—throughout your business logic tightly couples your code to external systems. This creates major structural and performance issues, and it makes the code impossible to keep DRY. The defects follow from the coupling: the logic cannot be tested without the external system standing behind it, none of it can be reused anywhere the system is absent, and there is no single place to change how the program talks to the outside.
 
-Honest Code requires pure business logic functions in the middle; I/O (database, HTTP, file system) happens once, at the edges (route handlers, CLI entry points). The input boundary calls the pure function (either directly or through an orchestrator function that creates chains of functions defined in lookup tables) and then does the I/O with the result. This is why Honest Code has no mocks, the pure core has nothing to mock.
+Honest Code requires pure business logic functions in the middle; I/O (database, HTTP, file system) happens once, at the edges (route handlers, CLI entry points). The input boundary calls the pure function (either directly or through an orchestrator function that creates chains of functions defined in lookup tables) and then does the I/O with the result. This is why Honest Code has no mocks: the pure core has nothing to mock.
 
 ## Composition Over Inheritance
 An inheritance chain hides the code that actually runs. `class B extends A extends Base` tells you where a method is declared, not which one executes: that is decided at call time by the resolution order, and a `super()` call can land anywhere in the chain. The code you read and the code that runs are two different things, and nothing in the file marks where they part company.
 
-Instead of `class B extends A extends Base`, use `pipe(validate, authenticate, rate_limit, create_order)`. Each step is an independent function. The pipeline is visible at the point of assembly. No `super()` calls, no hidden method resolution order. Functions are sequenced using orchestrators and the sequencing order is a lookup table. Orchestrators can sequence other orchestrators.
+Instead of `class B extends A extends Base`, use `pipe(validate, authenticate, rate_limit, create_order)`. Each step is an independent function. The pipeline is visible at the point of assembly. No `super()` calls, no hidden method resolution order. Functions are sequenced using orchestrators and the sequencing order is a lookup table. An orchestrator is the root of one operation and does not call another orchestrator: nesting them re-introduces exactly the invisible sequencing this principle removes, which is why honest-check treats it as an error (HC-OR001).
 
 ## DOM as State (DATAOS)
 Redux/MobX/Zustand synchronize a shadow copy of server state and it is inevitable that this synchronisation will break.
@@ -51,7 +51,7 @@ Don't catch inside business logic. Let functions raise. The route handler (or su
 ## SQL Over Application Caches
 A cache is a second copy of data that is already authoritative somewhere else, and the two agree only until something changes. Every write becomes two writes that can disagree, and the disagreement is silent: a stale answer is shaped exactly like a fresh one, so nothing downstream can tell them apart.
 
-Before adding a cache, profile the query. A single SQL join with proper indexes runs under 3ms. The cache adds invalidation bugs, stale data, and a second source of truth. Fix the query or the schema first. Only cache after measurement proves it necessary. SQLite will ALWAYS be faster than Redis (we tested), Redis is only required when sharing mutable state across server instances, such as auth tokens.
+Before adding a cache, profile the query. A single SQL join with proper indexes runs under 3ms. The cache adds invalidation bugs, stale data, and a second source of truth. Fix the query or the schema first. Only cache after measurement proves it necessary. In our measurements SQLite outperformed Redis, because a local read beats a network round trip. Redis earns its place only where mutable state has to be shared across server instances, such as auth tokens.
 
 ## Pure Function Assertions Over Mocks
 A mock makes a test agree with itself. It replaces the thing under test with a description of what you already believe, so the test passes when the belief matches the code and keeps passing when belief and code are wrong together. A suite built on mocks tells you the code still does what it did, never that it does what it should.
