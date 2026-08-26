@@ -99,6 +99,15 @@ Instead of `self._config` set in `__init__`, pass `config: dict` as an argument 
 
 **Enforced by** honest-check HC-P007 and HC-P004's global-read clause, statically, at the gate.
 
+## Trust the Contract in the Interior
+A function that re-checks what its own signature already promised has added a branch nothing can reach. `if not isinstance(x, int)` inside `def f(x: int)` guards against a caller the declaration has already excluded, so in a correct program the branch is dead, and in an incorrect one it fires where the type checker should have. Guard clauses spread through business logic do this at scale: every one adds a path, none can be exercised by a caller honouring the contract, and the untested region of the function grows with each check added in the name of safety.
+
+The cost is not the wasted comparison. It is that the signature stops being believed. Once a declared constraint is re-tested inside, a reader cannot tell which constraints the code depends on and a caller cannot tell what it is actually required to satisfy, so the contract degrades into documentation.
+
+Validate declaratively at the boundary, once, where untrusted input arrives, and let the interior take the contract as given. Count a defensive check in the interior as a violation rather than as robustness. It is distrust of your own contracts, and it prices as untestable code.
+
+**Nothing enforces this.** No rule in honest-check reads a redundant interior check. HC-P005 is the nearest and it is a different claim: it catches a hand-written validation duplicating a constraint declared elsewhere, where this catches a function declining to trust a constraint it was handed.
+
 ## No Implicit Defaults
 `def f(x, timeout=30)` silently absorbs the caller's omission. Afterwards the program cannot distinguish a caller who chose thirty seconds from one who forgot, and the non-default region is invisible at every call site, so nothing exercises it. A default is catch-and-swallow applied to inputs, and it manufactures an untested input region by construction.
 
