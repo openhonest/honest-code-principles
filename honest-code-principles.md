@@ -150,6 +150,15 @@ Every function carries exactly one gherkin scenario naming it. The rule is a bij
 
 **Enforced by** `feature-gate.sh`, which reconciles the function names in a module against the scenario subjects in its features and fails on any difference in either direction. honest-check catalogues HC-P009 for the same rule and does not emit it.
 
+## Watch the Test Fail First
+A test written after the code passes on its first run, and a test that has never failed has never been shown capable of failing. An assertion that is always true, a scenario whose setup already guarantees the result, and a test calling a function that cannot break look exactly like a test that works. The suite is green in every case, and green is the only thing anyone reads.
+
+Write the scenario, run it, and watch it fail for the reason you expect before writing the code that satisfies it. The failure is the evidence: it is the one moment the test demonstrates it can detect the absence of the thing. A failure for the wrong reason, an import error rather than an assertion error, is the same as no failure at all and means the test is not yet pointed at the behaviour.
+
+This is the ordering rule that makes One Gherkin Per Function worth having. The bijection proves a scenario exists for every function; the red run proves the scenario would notice if the function stopped working. Neither is sufficient alone, and a suite with the first and not the second reconciles perfectly while testing nothing.
+
+**Nothing enforces this, and nothing can.** The evidence is destroyed by the act of passing. A test that failed and now passes is byte-identical to a test that never failed, so no checker reading the final state can tell them apart. Every other principle here is visible in the artifact; this one is visible only while it is happening. It is written down because a discipline nobody can verify is the first one to be skipped quietly, and the second half of that sentence is the reason to say so rather than leave it implied.
+
 ## Declarative Equivalents Over Framework Lifecycle Hooks
 Lifecycle hooks are an initialisation order you cannot see. `componentDidMount`, `useEffect` cleanup and `ngOnInit` each run at a moment the framework picks, so the sequence lives in the framework's documentation instead of your file, and two hooks that must happen in an order have no way to say so.
 
